@@ -1,17 +1,38 @@
 black_border = "2px solid black"
 red_border = "2px solid red"
-default_speed = 100
+default_speed = 100 // default execution "delay"
+load_button = document.getElementById("load-game")
 
+// ========= HELPER FUNCTIONS ========= //
 
+//function to check if two arrays are equal
+function is_equal(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; ++i) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
 
-function loadgame() {
-    let input = document.getElementById("id-input")
-    let id = (input.value) ? input.value : 3
-    if (id > 1000 || id < 0) alert('Choose an ID between 0 and 1000')
-    let game = parse_game(data[id-1])
-    sudoku.set_game(game)
+//This function reads a game from the json object and maps it into an array of numbers
+function parse_game(game) {
+    var game_data = game.split(" ")
+    var init = game_data[0]
+    var sol = game_data[1]
+    let parsed_game = []
+    parsed_game.push(init.split("").map(Number))
+    parsed_game.push(sol.split("").map(Number))
+
+    return parsed_game
+
 }
 
+
+// ========== UI FUNCTIONS ========== //
+
+//updates Table interface
 function updateTable(tableData) {
     let table = document.getElementById("main-table")
     
@@ -26,6 +47,7 @@ function updateTable(tableData) {
         cell.innerText = `${tableData[i]}`
     }
 }
+//Creates table interface
 function createTable(tableData) {
     var table = document.createElement('table');
     table.classList.add("table", "is-bordered", "is-striped", "is-narrow","level-item", "has-background-light")
@@ -59,36 +81,52 @@ function createTable(tableData) {
     document.getElementById("main-column").appendChild(table)
 }
 
+//update cell color on DSatur
+function cell_edit(cell) {
+    return new Promise((res) => {
+        setTimeout(() => {
+            cell.style.backgroundColor = "LightGrey"
+            res()
+        },100)
+        
+    })
+}
+// function that waits color to be updated
+async function highlight_cell(v) {
+    let cell = document.getElementById(`cell-${v}`)
+    await cell_edit(cell)
+    
+}
 
+// Set spinning running classes to buttons and disables them
+function running_update_view(running,disabled) {
+setTimeout(() => {
+    running.classList.toggle(`is-loading`)
+    disabled.disabled = ! disabled.disabled
+    load_button.disabled = !load_button.disabled
 
-
-function parse_game(game) {
-    var game_data = game.split(" ")
-    var init = game_data[0]
-    var sol = game_data[1]
-    let parsed_game = []
-    parsed_game.push(init.split("").map(Number))
-    parsed_game.push(sol.split("").map(Number))
-
-    return parsed_game
+},5)
 
 }
 
 
 
+// ========= main class ========= //
 class Sudoku {
     constructor(game){
      
-        this.vertices = [...Array(81)].map(() => []);
-        this.load_button = document.getElementById("load-game")
+        this.vertices = [...Array(81)].map(() => []); // adjacency list
+        /* some inputs used in the class */
         this.speed = document.getElementById("speed-input")
         this.dsatur_button = document.getElementById("dsatur")
         this.backtracking_button = document.getElementById("backtracking")
         this.speed_val = default_speed
-        this.build_sudoku_graph()
-        this.sort_edges()
-    }
 
+        //build the graph adjacency list
+        this.build_sudoku_graph()
+        // this.sort_edges()
+    }
+    //sets initial game values
     set_game(game) {
         this.initial_colors = game[0]
         this.result = game[0].slice()
@@ -102,17 +140,8 @@ class Sudoku {
     sort_edges() {
         this.vertices.forEach(e => e.sort((a,b) => a-b))
     }
-
-    running_update_view(running,disabled) {
-         setTimeout(() => {
-            running.classList.toggle(`is-loading`)
-            disabled.disabled = ! disabled.disabled
-            this.load_button.disabled = !this.load_button.disabled
-
-        },5)
-  
-    }
-
+ 
+    // checks for each neighbor if a color is available
     color_available(v,color){
         let vertex = this.vertices[v]
         for(let i=0; i<vertex.length; i++){
@@ -123,18 +152,23 @@ class Sudoku {
         return true
     }
 
+    // main m backtracking function
     m_graph_coloring(m){
-        loadgame()
-        this.result = this.initial_colors.slice()
+        this.result = this.initial_colors.slice() //updates result to initial board
+        /* Deal with UI changes */
         updateTable(this.result)
         this.speed.value ? this.speed_val = this.speed.value : default_speed
-        this.running_update_view(this.backtracking_button,this.dsatur_button)
+        running_update_view(this.backtracking_button,this.dsatur_button)
+
+        // Run the method
         this.m_graph_coloring_util(m,0).then(()=> {
-            this.running_update_view(this.backtracking_button,this.dsatur_button)
+            updateTable(this.result)
+            running_update_view(this.backtracking_button,this.dsatur_button)
         })
     
 
     }
+    //Utility backtracking method, async because theres a delay to display iterations
     async m_graph_coloring_util(m,v){
         // console.log(v)
         
@@ -152,9 +186,11 @@ class Sudoku {
         }
         return false
     }
-   async dsatur(){
-        loadgame()
-        this.running_update_view(this.dsatur_button,this.backtracking_button)
+
+    //DSatur method
+    async dsatur(){
+        /* Loads initial config and update UI */
+        running_update_view(this.dsatur_button,this.backtracking_button)
         this.result = this.initial_colors.slice()
         updateTable(this.result)
         this.speed.value ? this.speed_val = this.speed.value : default_speed
@@ -165,7 +201,7 @@ class Sudoku {
         var remaining = [...Array(81).keys()]
         var v_count = 0
 
-
+        /* Method to caluculate the saturation for the initial board */
         for (let i=0; i < 81; i++) {
             let sat = []
             if(this.result[i] == 0) {
@@ -186,14 +222,14 @@ class Sudoku {
          
         }
 
-
+        /* Main DSatur loop */
         while(v_count < 81) {
+            // get index of max saturation
             let max = saturation.indexOf(Math.max(...saturation));
-            this.highlight_cell(max)
+            highlight_cell(max)
             let colored = false
-      
+            // look colors and update the color/saturation if the color is available
             for(let c=1;c<=9; c++) {
-                // let c = used_colors[i]
                 if(this.color_available(max,c)) {
                     this.update_saturation(this.vertices[max],c,saturation)
                     await this.set_result_value(max,c)
@@ -208,15 +244,14 @@ class Sudoku {
             }
             
         }
+        //Wait to update the view
         setTimeout(() => {
             updateTable(this.result)
-            this.running_update_view(this.dsatur_button,this.backtracking_button)
-            // console.log(JSON.stringify(sudoku.solution.sort()) === JSON.stringify(sudoku.result.sort()));
-
+            running_update_view(this.dsatur_button,this.backtracking_button)
         },100)
         return true
     }
-
+    // updates saturation given a vertex,color combination
     update_saturation(vertex,c,sat) {
         vertex.forEach((v) => {
             if(this.color_available(v,c) && sat[v]!=-1)
@@ -224,7 +259,26 @@ class Sudoku {
 
         })
     }
-    get_small_regions(){
+
+    // ======== METHOD TO UPDATE COLOR ON A VERTEX IN BOTH COLORS AND UI ========= //
+
+    // update new color value into the Table UI
+    set_result_value(p,v){
+        return new Promise((res) => {
+            this.result[p] = v
+            setTimeout(() => {
+                let cell = document.getElementById(`cell-${p}`)
+                cell.innerText = `${v}`
+                res()
+            },this.speed_val)
+        })
+    
+    }
+
+    // ======= SUDOKU GRAPH BUILDING FUNCTIONS ========= //
+
+    // Helper to return 3x3 Regions in the graph
+     get_small_regions(){
         let regions = [...Array(9)].map(() => [])
         let idx = 0
         for(let i = 0; i<9; i++){
@@ -235,6 +289,7 @@ class Sudoku {
         }
         return regions
     }
+    // Helper to set edges on the 3x3 regions
     set_small_regions(index){
         let regions = this.get_small_regions()
 
@@ -250,6 +305,8 @@ class Sudoku {
            
         }
     }
+
+    // set grap row and column edges
     set_graph_rc(i,j){
         let rows = []
         let idx = i*9+j
@@ -266,9 +323,12 @@ class Sudoku {
         }
 
     }
+
+    // check if edge has been included already
     is_available(idx,value) {
         return ((idx!=value) && (!this.vertices[idx].includes(value)))
     }
+    // main function to build graph
     build_sudoku_graph(){
         for(let i=0; i<9; i++){
             for(let j=0; j<9; j++){
@@ -279,46 +339,16 @@ class Sudoku {
             
         }
     }
-    cell_edit(cell) {
-        return new Promise((res) => {
-            setTimeout(() => {
-                cell.style.backgroundColor = "LightGrey"
-                res()
-            },100)
-            
-        })
-    }
-    async highlight_cell(v) {
-        let cell = document.getElementById(`cell-${v}`)
-        await this.cell_edit(cell)
-        
-    }
-
-   
-    set_cells() {
-        for (const r in this.execution_stack) {
-
-            let cell = document.getElementById(`cell-${this.execution_stack[r][0]}`)
-            cell.innerHTML = `${this.execution_stack[r][1]}`
-        }
-    }
-    
-
-    
-    set_result_value(p,v){
-        return new Promise((res) => {
-            this.result[p] = v
-            setTimeout(() => {
-                let cell = document.getElementById(`cell-${p}`)
-                cell.innerText = `${v}`
-                res()
-            },this.speed_val)
-            // console.log(`setting ${v} to pos: ${p}`)
-     
-        })
-    
-    }
 } 
+
+// updates the object game configuration based on input
+function loadgame() {
+    let input = document.getElementById("id-input")
+    let id = (input.value) ? input.value : 3
+    if (id > 1000 || id <= 0){ alert('Choose an ID between 0 and 1000'); return; }
+    let game = parse_game(data[id-1])
+    sudoku.set_game(game)
+}
 
 var sudoku = new Sudoku()
 loadgame()
