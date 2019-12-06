@@ -2,9 +2,6 @@ black_border = "2px solid black"
 red_border = "2px solid red"
 default_speed = 100
 
-var sudoku = new Sudoku()
-loadgame()
-
 
 
 function loadgame() {
@@ -322,4 +319,7 @@ class Sudoku {
     
     }
 } 
+
+var sudoku = new Sudoku()
+loadgame()
 
