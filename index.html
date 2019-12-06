@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+
+<html class="has-background-light">
+    <head>
+        <title>Sudoku Solver</title>
+        <script type="text/javascript" src="sudoku_data.js"></script>
+        <link rel="stylesheet" href="bulma.min.css">
+        <link rel="stylesheet" href="style.css">
+
+    </head>
+    <body >
+        <section class="section ">
+            <div class="columns">
+                <div class="column is-8 is-offset-2 has-text-centered" id="main-column">
+                    <h1 class="title is-1">Sudoku Solver</h1>
+                    <h1 class="title is-5">Solving sudoku puzzles using graph coloring</h1>
+                    <div class="column is-8 is-offset-2 has-text-justified">
+                        <p class=" is-6"> Use the buttons below to choose between <strong>DSatur (Saturation Algorithm)</strong> or <strong>Backtracking</strong>. Change the speed as you wish, keep in mind that Backtracking is slow and may take a long time.</p>
+                        <p class=" is-6">When running DSatur, the highest saturation is highlited for each iteration.</p>
+                        <p class="is-6">Choose one of the 1000 games pre-loaded. (Default game is 3 because it has fast backtracking solution)</p>
+                        <p class="is-6">Run with 0ms for fastest execution. It is <strong>not</strong> actual execution time because of the UI</p>
+
+                    </div>
+                    
+
+                    <div class="container level-item mt-1">
+                        <div class="level-left">
+                                <div class="level-item">
+                                        <div class="field has-addons">
+                                            <p class="control">
+                                                <button class="button is-info" onclick="document.getElementById(`id-input`).focus()"; >Game ID</button>
+                                            </p>
+                                            <p class="control">
+                                                <input class="input is-info" id="id-input" type="text" placeholder="1 to 1000" style="width:150px;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+                                            </p>
+                                        </div>
+                                    </div>
+                                <div class="level-item">
+                                    <div class="field has-addons">
+                                        <p class="control">
+                                            <button class="button is-info" onclick="document.getElementById(`speed-input`).focus()">Speed</button>
+                                        </p>
+                                        <p class="control">
+                                            <input class="input is-info" id="speed-input" type="text" placeholder="default = 100ms" style="width:150px;" oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');">
+                                        </p>
+                                    </div>
+                                </div>
+                        </div>
+                    </div>   
+                    <div class="container level-item">
+                        <div class="level-left">
+                                <div class="level-item">
+                                        <p class="control">
+                                            <button class="button is-primary" id="load-game" onclick="loadgame()">Load Game</button>
+                                        </p>
+                                    </div>
+                                    <div class="level-item">
+                                            <p class="control">
+                                                <button class="button is-primary" onclick="location.reload()">Restart</button>
+                                            </p>
+                                    </div>
+                                <div class="level-item">
+                                        <p class="control">
+                                            <button class="button is-dark" id="dsatur" onclick="sudoku.dsatur()">DSatur</button>
+                                        </p>
+                                    </div>
+                                    <div class="level-item">
+                                        <p class="control">
+                                            <button class="button is-dark" id="backtracking" onclick="sudoku.m_graph_coloring(9)">Backtracking</button>
+                                        </p>
+                                    </div>
+                                    
+                        </div>
+                    </div>   
+                </div>
+            </div>
+        </section>
+        <script type="text/javascript" src="auxfunctions.js"></script>
+        <script type="text/javascript" src="sudoku.js"></script>  
+
+    </body>
+</html>
