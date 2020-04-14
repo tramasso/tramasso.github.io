@@ -44,7 +44,7 @@ function updateTable(tableData) {
     for(let i=0;i<81;i++) {
         let cell = document.getElementById(`cell-${i}`)
         cell.style.backgroundColor = "white"
-        cell.innerText = `${tableData[i]}`
+        cell.innerText = tableData[i] == 0 ? `` : `${tableData[i]}`
     }
 }
 //Creates table interface
@@ -68,7 +68,8 @@ function createTable(tableData) {
             cell.id = `cell-${j}`
             cell.width="50px"
             cell.classList.add("subtitle","has-text-centered")
-            cell.appendChild(document.createTextNode(tableData[j]));
+            text = tableData[j] == 0 ? `` : `${tableData[j]}`
+            cell.appendChild(document.createTextNode(text));
             row.appendChild(cell);
       
         }
@@ -82,10 +83,10 @@ function createTable(tableData) {
 }
 
 //update cell color on DSatur
-function cell_edit(cell) {
+function cell_edit(cell,color) {
     return new Promise((res) => {
         setTimeout(() => {
-            cell.style.backgroundColor = "LightGrey"
+            cell.style.backgroundColor = color
             res()
         },100)
         
@@ -94,7 +95,13 @@ function cell_edit(cell) {
 // function that waits color to be updated
 async function highlight_cell(v) {
     let cell = document.getElementById(`cell-${v}`)
-    await cell_edit(cell)
+    await cell_edit(cell,"LightGrey")
+    
+}
+
+async function highlight_remove_cell(v) {
+    let cell = document.getElementById(`cell-${v}`)
+    await cell_edit(cell, "White")
     
 }
 
@@ -159,27 +166,29 @@ class Sudoku {
         updateTable(this.result)
         this.speed.value ? this.speed_val = this.speed.value : default_speed
         running_update_view(this.backtracking_button,this.dsatur_button)
-
         // Run the method
-        this.m_graph_coloring_util(m,0).then(()=> {
-            updateTable(this.result)
+       this.m_graph_coloring_util(m,0).then(val => {
+            console.log(val)
+            console.log(is_equal(this.result,this.solution))
             running_update_view(this.backtracking_button,this.dsatur_button)
+
         })
     
 
     }
     //Utility backtracking method, async because theres a delay to display iterations
     async m_graph_coloring_util(m,v){
-        // console.log(v)
-        
+
         if (v == 81) return true
+        if(this.initial_colors[v] != 0) return this.m_graph_coloring_util(m,v+1)
+      
         for (let c = 1; c <= m; c++){
 
             if (this.color_available(v,c)){
   
                 await this.set_result_value(v,c)
 
-                if( await this.m_graph_coloring_util(m,v+1)) return true
+                if(await this.m_graph_coloring_util(m,v+1)) return true
 
                 await this.set_result_value(v,0)
             }
@@ -246,7 +255,8 @@ class Sudoku {
         }
         //Wait to update the view
         setTimeout(() => {
-            updateTable(this.result)
+            // updateTable(this.result)
+            console.log(is_equal(this.solution,this.result))
             running_update_view(this.dsatur_button,this.backtracking_button)
         },100)
         return true
@@ -265,10 +275,17 @@ class Sudoku {
     // update new color value into the Table UI
     set_result_value(p,v){
         return new Promise((res) => {
-            this.result[p] = v
+            this.result[p] = v 
             setTimeout(() => {
                 let cell = document.getElementById(`cell-${p}`)
-                cell.innerText = `${v}`
+                if(v == 0) {
+                    cell.innerText = `` 
+                    highlight_remove_cell(p)
+                } else {
+                    cell.innerText = `${v}`
+                    highlight_cell(p)
+                }
+                // cell.innerText = v == 0 ? `` : `${v}`
                 res()
             },this.speed_val)
         })
@@ -306,7 +323,7 @@ class Sudoku {
         }
     }
 
-    // set grap row and column edges
+    // set graph row and column edges
     set_graph_rc(i,j){
         let rows = []
         let idx = i*9+j
